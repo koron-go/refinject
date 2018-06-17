@@ -1,6 +1,9 @@
 package refinject
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // Catalog is a types catalog for injection.
 type Catalog struct {
@@ -17,7 +20,9 @@ func (c *Catalog) Register(v interface{}, labels ...string) error {
 		c.tmap = make(map[reflect.Type]label)
 	}
 	if _, ok := c.tmap[typ]; ok {
-		return &DupilcateTypeError{typ: typ}
+		return errorFunc(func() string {
+			return fmt.Sprintf("registered already: %s", typ)
+		})
 	}
 	c.tmap[typ] = newLabel(labels)
 	return nil
@@ -44,7 +49,9 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 		return nil, err
 	}
 	if !rv.CanInterface() {
-		return nil, &CantMaterializeError{rv: rv}
+		return nil, errorFunc(func() string {
+			return fmt.Sprintf("won't be materialized: %s", rv)
+		})
 	}
 
 	// FIXME: check to guard from panic
@@ -65,5 +72,7 @@ func (c *Catalog) find(ityp reflect.Type, l label) (reflect.Type, label, error) 
 			return k, v, nil
 		}
 	}
-	return nil, nil, &NotFoundError{ityp: ityp, l: l}
+	return nil, nil, errorFunc(func() string {
+		return fmt.Sprintf("not found interface: %s labels=%+v", ityp, l)
+	})
 }

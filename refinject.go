@@ -1,6 +1,7 @@
 package refinject
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -10,13 +11,21 @@ const (
 	Tag = "refinject"
 )
 
+type errorFunc func() string
+
+func (f errorFunc) Error() string {
+	return f()
+}
+
 func getType(v interface{}) (reflect.Type, error) {
 	typ := reflect.TypeOf(v)
 	for typ != nil && typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
 	if typ == nil {
-		return nil, &NilTypeError{v: v}
+		return nil, errorFunc(func() string {
+			return fmt.Sprintf("failed to determine type of: %+v", v)
+		})
 	}
 	return typ, nil
 }
@@ -27,7 +36,9 @@ func getInterface(v interface{}) (reflect.Type, error) {
 		return nil, err
 	}
 	if typ.Kind() != reflect.Interface {
-		return nil, &NotInterfaceError{v: v}
+		return nil, errorFunc(func() string {
+			return fmt.Sprintf("failed to determine interface: %+v", v)
+		})
 	}
 	return typ, nil
 }
@@ -38,7 +49,9 @@ func needInject(f reflect.StructField) (reflect.Type, label, bool, error) {
 		return nil, nil, false, nil
 	}
 	if f.Type.Kind() != reflect.Interface {
-		return nil, nil, false, &FieldNotInterfaceError{f: f}
+		return nil, nil, false, errorFunc(func() string {
+			return fmt.Sprintf("non interface field won't be injected: %s", f.Name)
+		})
 	}
 	return f.Type, newLabel(strings.Split(v, " ")), true, nil
 }

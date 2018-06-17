@@ -1,6 +1,9 @@
 package refinject
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 type objEntry struct {
 	l  label
@@ -44,7 +47,9 @@ func (j *injector) inject(rv reflect.Value) error {
 			continue
 		}
 		if !rv.Field(i).CanSet() {
-			return &CantSetError{rv: rv, i: i}
+			return errorFunc(func() string {
+				return fmt.Sprintf("won't be set field: %s type=%s", f.Name, typ)
+			})
 		}
 		fv, err := j.materialize(ityp, l)
 		if err != nil {
