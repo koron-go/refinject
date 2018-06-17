@@ -4,8 +4,8 @@ import "testing"
 
 func TestLabel(t *testing.T) {
 	isSubset := func(a []string, b []string) {
-		la := newLabel(a)
-		lb := newLabel(b)
+		la := newLabelSet(a)
+		lb := newLabelSet(b)
 		if !la.isSubset(lb) {
 			t.Errorf("isSubset failed:\n\ta=%+v\n\tb=%+v\n\tla=%+v\n\tlb=%+v",
 				a, b, la, lb)
@@ -67,8 +67,8 @@ func TestLabel(t *testing.T) {
 	isSubset([]string{""}, p2)
 
 	nonSubset := func(a []string, b []string) {
-		la := newLabel(a)
-		lb := newLabel(b)
+		la := newLabelSet(a)
+		lb := newLabelSet(b)
 		if la.isSubset(lb) {
 			t.Errorf("isSubset unexpectedly success:\n\ta=%+v\n\tb=%+v\n\tla=%+v\n\tlb=%+v",
 				a, b, la, lb)

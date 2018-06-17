@@ -53,7 +53,7 @@ func needInject(f reflect.StructField) (reflect.Type, labelSet, bool, error) {
 			return fmt.Sprintf("non interface field won't be injected: %s", f.Name)
 		})
 	}
-	return f.Type, newLabel(strings.Split(v, " ")), true, nil
+	return f.Type, newLabelSet(strings.Split(v, " ")), true, nil
 }
 
 func isEmbedded(rv reflect.Value, f reflect.StructField) (reflect.Value, bool) {
@@ -68,6 +68,8 @@ func isEmbedded(rv reflect.Value, f reflect.StructField) (reflect.Value, bool) {
 var DefaultCatalog = &Catalog{}
 
 // Register registers a type to default catalog.
+// The passed instance is not used, but only used its type,
+// a new instance will be created when materialize.
 func Register(v interface{}, labels ...string) error {
 	return DefaultCatalog.Register(v, labels...)
 }

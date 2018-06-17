@@ -6,7 +6,7 @@ type labelSet []string
 
 var emptyLabel = labelSet{}
 
-func newLabel(v []string) labelSet {
+func newLabelSet(v []string) labelSet {
 	if len(v) == 0 {
 		return emptyLabel
 	}

@@ -16,11 +16,13 @@ func (e *typeEntry) String() string {
 
 // Catalog is a types catalog for injection.
 type Catalog struct {
-	typeMap  map[reflect.Type]int
+	typeMap map[reflect.Type]int
 	entries []*typeEntry
 }
 
 // Register registers a type.
+// The passed instance is not used, but only used its type,
+// a new instance will be created when materialize.
 func (c *Catalog) Register(v interface{}, labels ...string) error {
 	typ, err := getType(v)
 	if err != nil {
@@ -37,7 +39,7 @@ func (c *Catalog) Register(v interface{}, labels ...string) error {
 		})
 	}
 	c.typeMap[typ] = len(c.entries)
-	c.entries = append(c.entries, &typeEntry{typ: typ, ls: newLabel(labels)})
+	c.entries = append(c.entries, &typeEntry{typ: typ, ls: newLabelSet(labels)})
 
 	return nil
 }
@@ -58,7 +60,7 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 	if err != nil {
 		return nil, err
 	}
-	rv, err := newInjector(c).materialize(ityp, newLabel(labels))
+	rv, err := newInjector(c).materialize(ityp, newLabelSet(labels))
 	if err != nil {
 		return nil, err
 	}
