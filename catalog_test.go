@@ -190,7 +190,7 @@ func TestInjectEmbedded(t *testing.T) {
 	if !ok || p == nil {
 		t.Fatalf("failed to inject MyFoo: %+v", p)
 	}
-	// asset to not panic
+	// assert not panic
 	p.Bar()
 }
 
@@ -208,6 +208,6 @@ func TestMaterializeEmbedded(t *testing.T) {
 	if !ok || p == nil {
 		t.Fatalf("failed to materialize Fooer: %+v", p)
 	}
-	// asset to not panic
+	// assert not panic
 	iv.Bar()
 }
