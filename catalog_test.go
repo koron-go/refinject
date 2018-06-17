@@ -28,6 +28,11 @@ type BazService struct {
 	MyBar Barer `refinject:""`
 }
 
+type QuxService struct {
+	MyFoo Fooer `refinject:""`
+	MyBar Barer `refinject:""`
+}
+
 func TestInjectSimple(t *testing.T) {
 	c := &Catalog{}
 	c.Register(&FooService{})
@@ -68,7 +73,7 @@ func TestMaterializeSimple(t *testing.T) {
 	}
 }
 
-func TestInjectRecur(t *testing.T) {
+func TestInjectHierarchy(t *testing.T) {
 	c := &Catalog{}
 	c.Register(&FooService{})
 	c.Register(&BarService{})
@@ -85,5 +90,81 @@ func TestInjectRecur(t *testing.T) {
 	pfoo, ok := pbar.MyFoo.(*FooService)
 	if !ok || pfoo == nil {
 		t.Fatalf("failed injection Fooer: %+v", pfoo)
+	}
+}
+
+func TestInjectCached(t *testing.T) {
+	c := &Catalog{}
+	c.Register(&FooService{})
+	c.Register(&BarService{})
+
+	qux := &QuxService{}
+	err := c.Inject(qux)
+	if err != nil {
+		t.Fatalf("inject failed: %s", err)
+	}
+
+	pfoo, ok := qux.MyFoo.(*FooService)
+	if !ok || pfoo == nil {
+		t.Fatalf("failed to inject MyFoo: %+v", pfoo)
+	}
+	pbar, ok := qux.MyBar.(*BarService)
+	if !ok || pbar == nil {
+		t.Fatalf("failed to inject MyBar: %+v", pbar)
+	}
+	pfoo2, ok := pbar.MyFoo.(*FooService)
+	if !ok || pfoo2 == nil {
+		t.Fatalf("failed to inject MyBar.MyFoo: %+v", pfoo2)
+	}
+	if pfoo != pfoo2 {
+		t.Fatalf("mismatch MyFoo and MyBar.MyFoo: %+v, %+v", pfoo, pfoo2)
+	}
+}
+
+type Quuxer1 interface {
+	Quux1()
+}
+
+type Quuxer2 interface {
+	Quux2()
+}
+
+type QuuxService1 struct {
+	MyQuux2 Quuxer2 `refinject:""`
+}
+
+func (*QuuxService1) Quux1() {}
+
+type QuuxService2 struct {
+	MyQuux1 Quuxer1 `refinject:""`
+}
+
+func (*QuuxService2) Quux2() {}
+
+func TestMaterializeRecursive(t *testing.T) {
+	c := &Catalog{}
+	c.Register(&QuuxService1{})
+	c.Register(&QuuxService2{})
+
+	var iv Quuxer1
+	_, err := c.Materialize(&iv)
+	if err != nil {
+		t.Fatalf("materialize failed: %s", err)
+	}
+
+	pq1, ok := iv.(*QuuxService1)
+	if !ok || pq1 == nil {
+		t.Fatalf("failed to materialize Quuxer1: %+v", pq1)
+	}
+	pq2, ok := pq1.MyQuux2.(*QuuxService2)
+	if !ok || pq2 == nil {
+		t.Fatalf("failed to inject MyQuux2: %+v", pq2)
+	}
+	pq1b, ok := pq2.MyQuux1.(*QuuxService1)
+	if !ok || pq2 == nil {
+		t.Fatalf("failed to inject MyQuux1: %+v", pq1b)
+	}
+	if pq1b != pq1 {
+		t.Fatalf("faield to re-use Quuxer1: %p %p", pq1b, pq1)
 	}
 }
