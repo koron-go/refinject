@@ -18,7 +18,9 @@ type BarService struct {
 	MyFoo Fooer `refinject:""`
 }
 
-func (*BarService) Bar() {}
+func (bar *BarService) Bar() {
+	bar.MyFoo.Foo()
+}
 
 type Barer interface {
 	Bar()
@@ -167,4 +169,45 @@ func TestMaterializeRecursive(t *testing.T) {
 	if pq1b != pq1 {
 		t.Fatalf("faield to re-use Quuxer1: %p %p", pq1b, pq1)
 	}
+}
+
+type CorgeService struct {
+	BarService
+}
+
+func TestInjectEmbedded(t *testing.T) {
+	c := &Catalog{}
+	c.Register(&CorgeService{})
+	c.Register(&FooService{})
+
+	baz := &BazService{}
+	err := c.Inject(baz)
+	if err != nil {
+		t.Fatalf("inject failed: %s", err)
+	}
+
+	p, ok := baz.MyBar.(*CorgeService)
+	if !ok || p == nil {
+		t.Fatalf("failed to inject MyFoo: %+v", p)
+	}
+	// asset to not panic
+	p.Bar()
+}
+
+func TestMaterializeEmbedded(t *testing.T) {
+	c := &Catalog{}
+	c.Register(&CorgeService{})
+	c.Register(&FooService{})
+
+	var iv Barer
+	v, err := c.Materialize(&iv)
+	if err != nil {
+		t.Fatalf("materialize failed: %s", err)
+	}
+	p, ok := v.(*CorgeService)
+	if !ok || p == nil {
+		t.Fatalf("failed to materialize Fooer: %+v", p)
+	}
+	// asset to not panic
+	iv.Bar()
 }

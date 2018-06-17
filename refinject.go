@@ -43,6 +43,14 @@ func needInject(f reflect.StructField) (reflect.Type, label, bool, error) {
 	return f.Type, newLabel(strings.Split(v, " ")), true, nil
 }
 
+func isEmbedded(rv reflect.Value, f reflect.StructField) (reflect.Value, bool) {
+	if !f.Anonymous {
+		return reflect.Value{}, false
+	}
+	fv := rv.FieldByIndex(f.Index)
+	return fv, true
+}
+
 // DefaultCatalog is default injection catalog.
 var DefaultCatalog = &Catalog{}
 

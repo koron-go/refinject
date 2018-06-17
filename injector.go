@@ -34,6 +34,13 @@ func (j *injector) inject(rv reflect.Value) error {
 			return err
 		}
 		if !ok {
+			// check embedded field.
+			if fv, ok := isEmbedded(rv, f); ok {
+				err := j.inject(fv)
+				if err != nil {
+					return err
+				}
+			}
 			continue
 		}
 		if !rv.Field(i).CanSet() {
