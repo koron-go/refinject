@@ -10,8 +10,18 @@ func newLabel(v []string) label {
 	if len(v) == 0 {
 		return emptyLabel
 	}
-	w := make([]string, len(v))
-	copy(w, v)
+	w := make([]string, 0, len(v))
+	m := make(map[string]struct{})
+	for _, s := range v {
+		if s == "" {
+			continue
+		}
+		if _, ok := m[s]; ok {
+			continue
+		}
+		m[s] = struct{}{}
+		w = append(w, s)
+	}
 	sort.Strings(w)
 	return label(w)
 }

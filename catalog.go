@@ -46,6 +46,11 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 	if !rv.CanInterface() {
 		return nil, &CantMaterializeError{rv: rv}
 	}
+
+	// FIXME: check to guard from panic
+	iv := reflect.ValueOf(v).Elem()
+	iv.Set(rv)
+
 	return rv.Interface(), nil
 }
 
@@ -53,7 +58,10 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 // labels.
 func (c *Catalog) find(ityp reflect.Type, l label) (reflect.Type, label, error) {
 	for k, v := range c.tmap {
-		if k.Implements(ityp) && l.isSubset(v) {
+		if !l.isSubset(v) {
+			continue
+		}
+		if reflect.PtrTo(k).Implements(ityp) {
 			return k, v, nil
 		}
 	}

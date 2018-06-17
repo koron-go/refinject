@@ -60,6 +60,12 @@ func TestLabel(t *testing.T) {
 	isSubset([]string{"ccc", "aaa", "bbb"}, p2)
 	isSubset([]string{"ccc", "bbb", "aaa"}, p2)
 
+	// subset: ignore empty label
+	isSubset([]string{""}, nil)
+	isSubset([]string{""}, []string{})
+	isSubset([]string{""}, p1)
+	isSubset([]string{""}, p2)
+
 	nonSubset := func(a []string, b []string) {
 		la := newLabel(a)
 		lb := newLabel(b)
