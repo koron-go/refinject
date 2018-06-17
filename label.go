@@ -2,11 +2,11 @@ package refinject
 
 import "sort"
 
-type label []string
+type labelSet []string
 
-var emptyLabel = label{}
+var emptyLabel = labelSet{}
 
-func newLabel(v []string) label {
+func newLabel(v []string) labelSet {
 	if len(v) == 0 {
 		return emptyLabel
 	}
@@ -23,10 +23,10 @@ func newLabel(v []string) label {
 		w = append(w, s)
 	}
 	sort.Strings(w)
-	return label(w)
+	return labelSet(w)
 }
 
-func (l label) isSubset(p label) bool {
+func (l labelSet) isSubset(p labelSet) bool {
 	if len(l) == 0 {
 		return true
 	}

@@ -6,8 +6,8 @@ import (
 )
 
 type typeEntry struct {
-	typ   reflect.Type
-	ls label
+	typ reflect.Type
+	ls  labelSet
 }
 
 func (e *typeEntry) String() string {
@@ -16,7 +16,8 @@ func (e *typeEntry) String() string {
 
 // Catalog is a types catalog for injection.
 type Catalog struct {
-	tmap map[reflect.Type]label
+	typeMap  map[reflect.Type]int
+	entries []*typeEntry
 }
 
 // Register registers a type.
@@ -25,15 +26,19 @@ func (c *Catalog) Register(v interface{}, labels ...string) error {
 	if err != nil {
 		return err
 	}
-	if c.tmap == nil {
-		c.tmap = make(map[reflect.Type]label)
+
+	if c.typeMap == nil {
+		c.typeMap = make(map[reflect.Type]int)
 	}
-	if _, ok := c.tmap[typ]; ok {
+	if n, ok := c.typeMap[typ]; ok {
+		old := c.entries[n]
 		return errorFunc(func() string {
-			return fmt.Sprintf("registered already: %s", typ)
+			return fmt.Sprintf("registered already: %s old-label:%+v", typ, old.ls)
 		})
 	}
-	c.tmap[typ] = newLabel(labels)
+	c.typeMap[typ] = len(c.entries)
+	c.entries = append(c.entries, &typeEntry{typ: typ, ls: newLabel(labels)})
+
 	return nil
 }
 
@@ -72,14 +77,14 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 
 // find finds a type which implements an interface (ityp) and match with
 // labels.
-func (c *Catalog) find(ityp reflect.Type, l label) (reflect.Type, label, error) {
+func (c *Catalog) find(ityp reflect.Type, l labelSet) (reflect.Type, labelSet, error) {
 	found := make([]*typeEntry, 0, 4)
-	for k, v := range c.tmap {
-		if !l.isSubset(v) {
+	for _, e := range c.entries {
+		if !l.isSubset(e.ls) {
 			continue
 		}
-		if reflect.PtrTo(k).Implements(ityp) {
-			found = append(found, &typeEntry{typ: k, ls: l})
+		if reflect.PtrTo(e.typ).Implements(ityp) {
+			found = append(found, e)
 		}
 	}
 	switch len(found) {

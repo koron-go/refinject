@@ -6,7 +6,7 @@ import (
 )
 
 type objEntry struct {
-	l  label
+	l  labelSet
 	rv reflect.Value
 }
 
@@ -61,7 +61,7 @@ func (j *injector) inject(rv reflect.Value) error {
 	return nil
 }
 
-func (j *injector) materialize(ityp reflect.Type, l label) (reflect.Value, error) {
+func (j *injector) materialize(ityp reflect.Type, l labelSet) (reflect.Value, error) {
 	if ityp.Kind() != reflect.Interface {
 		panic("type is not interface")
 	}
@@ -87,7 +87,7 @@ func (j *injector) materialize(ityp reflect.Type, l label) (reflect.Value, error
 	return rv, nil
 }
 
-func (j *injector) cacheGet(ityp reflect.Type, l label) (reflect.Value, bool) {
+func (j *injector) cacheGet(ityp reflect.Type, l labelSet) (reflect.Value, bool) {
 	entries, ok := j.omap[ityp]
 	if !ok {
 		return reflect.Value{}, false
@@ -100,6 +100,6 @@ func (j *injector) cacheGet(ityp reflect.Type, l label) (reflect.Value, bool) {
 	return reflect.Value{}, false
 }
 
-func (j *injector) cachePut(ityp reflect.Type, l label, rv reflect.Value) {
+func (j *injector) cachePut(ityp reflect.Type, l labelSet, rv reflect.Value) {
 	j.omap[ityp] = append(j.omap[ityp], &objEntry{l: l, rv: rv})
 }

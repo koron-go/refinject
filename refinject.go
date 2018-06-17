@@ -43,7 +43,7 @@ func getInterface(v interface{}) (reflect.Type, error) {
 	return typ, nil
 }
 
-func needInject(f reflect.StructField) (reflect.Type, label, bool, error) {
+func needInject(f reflect.StructField) (reflect.Type, labelSet, bool, error) {
 	v, ok := f.Tag.Lookup(Tag)
 	if !ok {
 		return nil, nil, false, nil
