@@ -1,6 +1,7 @@
 package refinject
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -206,8 +207,23 @@ func TestMaterializeEmbedded(t *testing.T) {
 	}
 	p, ok := v.(*CorgeService)
 	if !ok || p == nil {
-		t.Fatalf("failed to materialize Fooer: %+v", p)
+		t.Fatalf("failed to materialize Fooer: %+v", v)
 	}
 	// assert not panic
 	iv.Bar()
+}
+
+func TestFoundMultipleObjects(t *testing.T) {
+	c := &Catalog{}
+	c.Register(&BarService{})
+	c.Register(&CorgeService{})
+
+	var iv Barer
+	v, err := c.Materialize(&iv)
+	if err == nil {
+		t.Fatalf("materialize should be failed, by multiple found: %+v", v)
+	}
+	if !strings.HasPrefix(err.Error(), "found multiple objects for ") {
+		t.Errorf("unexpected error message: %s", err)
+	}
 }

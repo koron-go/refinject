@@ -5,6 +5,15 @@ import (
 	"reflect"
 )
 
+type typeEntry struct {
+	typ   reflect.Type
+	ls label
+}
+
+func (e *typeEntry) String() string {
+	return fmt.Sprintf("typeEntry:{%s labels:%+v}", e.typ, e.ls)
+}
+
 // Catalog is a types catalog for injection.
 type Catalog struct {
 	tmap map[reflect.Type]label
@@ -64,15 +73,26 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 // find finds a type which implements an interface (ityp) and match with
 // labels.
 func (c *Catalog) find(ityp reflect.Type, l label) (reflect.Type, label, error) {
+	found := make([]*typeEntry, 0, 4)
 	for k, v := range c.tmap {
 		if !l.isSubset(v) {
 			continue
 		}
 		if reflect.PtrTo(k).Implements(ityp) {
-			return k, v, nil
+			found = append(found, &typeEntry{typ: k, ls: l})
 		}
 	}
-	return nil, nil, errorFunc(func() string {
-		return fmt.Sprintf("not found interface: %s labels=%+v", ityp, l)
-	})
+	switch len(found) {
+	case 1:
+		e := found[0]
+		return e.typ, e.ls, nil
+	case 0:
+		return nil, nil, errorFunc(func() string {
+			return fmt.Sprintf("not found interface: %s labels=%+v", ityp, l)
+		})
+	default:
+		return nil, nil, errorFunc(func() string {
+			return fmt.Sprintf("found multiple objects for interface:%s labels:%+v : %+v", ityp, l, found)
+		})
+	}
 }
