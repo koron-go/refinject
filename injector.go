@@ -76,7 +76,10 @@ func (j *injector) materialize(ityp reflect.Type, l labelSet) (reflect.Value, er
 	if rv, ok := j.cacheGet(typ, labels); ok {
 		return rv, nil
 	}
-	rv := reflect.New(typ)
+	rv, err := newObj(typ)
+	if err != nil {
+		return reflect.Value{}, err
+	}
 	j.cachePut(typ, labels, rv)
 
 	// inject dependencies.

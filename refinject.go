@@ -85,3 +85,24 @@ func Inject(v interface{}) error {
 func Materialize(v interface{}, labels ...string) (interface{}, error) {
 	return DefaultCatalog.Materialize(v, labels...)
 }
+
+// Initiator is called when a component is created.
+type Initiator interface {
+	Init() error
+}
+
+func newObj(typ reflect.Type) (reflect.Value, error){
+	rv := reflect.New(typ)
+	if rv.CanInterface() {
+		p, ok := rv.Interface().(Initiator)
+		if ok {
+			err := p.Init()
+			if err != nil {
+				return reflect.Value{}, errorFunc(func() string {
+					return fmt.Sprintf("initiator failed on %s: %s", typ, err)
+				})
+			}
+		}
+	}
+	return rv, nil
+}
