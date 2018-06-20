@@ -134,9 +134,16 @@ type Quuxer2 interface {
 
 type QuuxService1 struct {
 	MyQuux2 Quuxer2 `refinject:""`
+
+	initCount int
 }
 
 func (*QuuxService1) Quux1() {}
+
+func (q1 *QuuxService1) InitiateComponent() error {
+	q1.initCount++
+	return nil
+}
 
 type QuuxService2 struct {
 	MyQuux1 Quuxer1 `refinject:""`
@@ -170,6 +177,12 @@ func TestMaterializeRecursive(t *testing.T) {
 	if pq1b != pq1 {
 		t.Fatalf("faield to re-use Quuxer1: %p %p", pq1b, pq1)
 	}
+
+	t.Run("initiator", func(t *testing.T) {
+		if pq1.initCount != 1 {
+			t.Fatalf("unexpected call of InitiateComponent: %d", pq1.initCount)
+		}
+	})
 }
 
 type CorgeService struct {
@@ -225,5 +238,34 @@ func TestFoundMultipleObjects(t *testing.T) {
 	}
 	if !strings.HasPrefix(err.Error(), "found multiple objects for ") {
 		t.Errorf("unexpected error message: %s", err)
+	}
+}
+
+type FooService2 struct {
+	initCount int
+}
+
+func (*FooService2) Foo() {}
+
+func (foo *FooService2) InitiateComponent() error {
+	foo.initCount++
+	return nil
+}
+
+func TestInitiator(t *testing.T) {
+	reg := &Registry{}
+	reg.Register(&FooService2{})
+
+	var iv Fooer
+	_, err := reg.Materialize(&iv)
+	if err != nil {
+		t.Fatalf("materialize failed: %s", err)
+	}
+	p, ok := iv.(*FooService2)
+	if !ok || p == nil {
+		t.Fatalf("unexpected return value: %+v", p)
+	}
+	if p.initCount != 1 {
+		t.Fatalf("unexpected call of InitiateComponent: %d", p.initCount)
 	}
 }
