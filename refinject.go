@@ -64,45 +64,45 @@ func isEmbedded(rv reflect.Value, f reflect.StructField) (reflect.Value, bool) {
 	return fv, true
 }
 
-// DefaultCatalog is default injection catalog.
-var DefaultCatalog = &Catalog{}
+// DefaultRegistry is default components registry.
+var DefaultRegistry = &Registry{}
 
-// Register registers a type to default catalog.
-// The passed instance is not used, but only used its type,
-// a new instance will be created when materialize.
+// Register registers a component's type to default registry.
+// The passed instance is not used, but only used its type.
+// A new instance will be created when materialize.
 func Register(v interface{}, labels ...string) error {
-	return DefaultCatalog.Register(v, labels...)
+	return DefaultRegistry.Register(v, labels...)
 }
 
-// Inject injects/fills fields which require to be injected from default
-// catalog.
+// Inject injects/fills fields which require to be injected by the component.
 func Inject(v interface{}) error {
-	return DefaultCatalog.Inject(v)
+	return DefaultRegistry.Inject(v)
 }
 
-// Materialize creates an object which have implements an interface using
-// default catalog.
+// Materialize creates a new component which fulfills required interfaces.
+// A component will be injected by all dependencies.
 func Materialize(v interface{}, labels ...string) (interface{}, error) {
-	return DefaultCatalog.Materialize(v, labels...)
+	return DefaultRegistry.Materialize(v, labels...)
 }
 
-// Initiator is called when a component is created.
+// Initiator is called when a component is created and all fields injected.
 type Initiator interface {
-	Init() error
+	InitiateComponent() error
 }
 
-func newObj(typ reflect.Type) (reflect.Value, error){
-	rv := reflect.New(typ)
-	if rv.CanInterface() {
-		p, ok := rv.Interface().(Initiator)
-		if ok {
-			err := p.Init()
-			if err != nil {
-				return reflect.Value{}, errorFunc(func() string {
-					return fmt.Sprintf("initiator failed on %s: %s", typ, err)
-				})
-			}
-		}
+func initiateComponent(rv reflect.Value) error {
+	if !rv.CanInterface() {
+		return nil
 	}
-	return rv, nil
+	p, ok := rv.Interface().(Initiator)
+	if !ok {
+		return nil
+	}
+	err := p.InitiateComponent()
+	if err != nil {
+		return errorFunc(func() string {
+			return fmt.Sprintf("failed to initiate component %T: %s", p, err)
+		})
+	}
+	return nil
 }

@@ -14,8 +14,8 @@ func (e *typeEntry) String() string {
 	return fmt.Sprintf("typeEntry:{%s labels:%+v}", e.typ, e.ls)
 }
 
-// Catalog is a types catalog for injection.
-type Catalog struct {
+// Registry is a registry of components which provide interfaces to inject.
+type Registry struct {
 	typeMap map[reflect.Type]int
 	entries []*typeEntry
 }
@@ -23,44 +23,44 @@ type Catalog struct {
 // Register registers a type.
 // The passed instance is not used, but only used its type,
 // a new instance will be created when materialize.
-func (c *Catalog) Register(v interface{}, labels ...string) error {
+func (reg *Registry) Register(v interface{}, labels ...string) error {
 	typ, err := getType(v)
 	if err != nil {
 		return err
 	}
 
-	if c.typeMap == nil {
-		c.typeMap = make(map[reflect.Type]int)
+	if reg.typeMap == nil {
+		reg.typeMap = make(map[reflect.Type]int)
 	}
-	if n, ok := c.typeMap[typ]; ok {
-		old := c.entries[n]
+	if n, ok := reg.typeMap[typ]; ok {
+		old := reg.entries[n]
 		return errorFunc(func() string {
 			return fmt.Sprintf("registered already: %s old-label:%+v", typ, old.ls)
 		})
 	}
-	c.typeMap[typ] = len(c.entries)
-	c.entries = append(c.entries, &typeEntry{typ: typ, ls: newLabelSet(labels)})
+	reg.typeMap[typ] = len(reg.entries)
+	reg.entries = append(reg.entries, &typeEntry{typ: typ, ls: newLabelSet(labels)})
 
 	return nil
 }
 
-// Inject injects/fills dependent interfaces of v from the catalog.
-func (c *Catalog) Inject(v interface{}) error {
-	return c.inject(reflect.ValueOf(v))
+// Inject injects/fills fields which require to be injected by the component.
+func (reg *Registry) Inject(v interface{}) error {
+	return reg.inject(reflect.ValueOf(v))
 }
 
-func (c *Catalog) inject(rv reflect.Value) error {
-	return newInjector(c).inject(rv)
+func (reg *Registry) inject(rv reflect.Value) error {
+	return newInjector(reg).inject(rv)
 }
 
 // Materialize materializes an object which have an interface ("v") with
 // filling dependent interfaces.
-func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, error) {
+func (reg *Registry) Materialize(v interface{}, labels ...string) (interface{}, error) {
 	ityp, err := getInterface(v)
 	if err != nil {
 		return nil, err
 	}
-	rv, err := newInjector(c).materialize(ityp, newLabelSet(labels))
+	rv, err := newInjector(reg).materialize(ityp, newLabelSet(labels))
 	if err != nil {
 		return nil, err
 	}
@@ -79,9 +79,9 @@ func (c *Catalog) Materialize(v interface{}, labels ...string) (interface{}, err
 
 // find finds a type which implements an interface (ityp) and match with
 // labels.
-func (c *Catalog) find(ityp reflect.Type, l labelSet) (reflect.Type, labelSet, error) {
+func (reg *Registry) find(ityp reflect.Type, l labelSet) (reflect.Type, labelSet, error) {
 	found := make([]*typeEntry, 0, 4)
-	for _, e := range c.entries {
+	for _, e := range reg.entries {
 		if !l.isSubset(e.ls) {
 			continue
 		}

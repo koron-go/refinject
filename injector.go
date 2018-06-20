@@ -12,13 +12,13 @@ type objEntry struct {
 
 // injector is a context of injection.
 type injector struct {
-	cat  *Catalog
+	reg  *Registry
 	omap map[reflect.Type][]*objEntry
 }
 
-func newInjector(c *Catalog) *injector {
+func newInjector(reg *Registry) *injector {
 	return &injector{
-		cat:  c,
+		reg:  reg,
 		omap: make(map[reflect.Type][]*objEntry),
 	}
 }
@@ -67,7 +67,7 @@ func (j *injector) materialize(ityp reflect.Type, l labelSet) (reflect.Value, er
 	}
 
 	// find a type which implement ityp interface.
-	typ, labels, err := j.cat.find(ityp, l)
+	typ, labels, err := j.reg.find(ityp, l)
 	if err != nil {
 		return reflect.Value{}, err
 	}
@@ -76,10 +76,7 @@ func (j *injector) materialize(ityp reflect.Type, l labelSet) (reflect.Value, er
 	if rv, ok := j.cacheGet(typ, labels); ok {
 		return rv, nil
 	}
-	rv, err := newObj(typ)
-	if err != nil {
-		return reflect.Value{}, err
-	}
+	rv := reflect.New(typ)
 	j.cachePut(typ, labels, rv)
 
 	// inject dependencies.
@@ -87,6 +84,13 @@ func (j *injector) materialize(ityp reflect.Type, l labelSet) (reflect.Value, er
 	if err != nil {
 		return reflect.Value{}, err
 	}
+
+	// complete object
+	err = initiateComponent(rv)
+	if err != nil {
+		return reflect.Value{}, err
+	}
+
 	return rv, nil
 }
 

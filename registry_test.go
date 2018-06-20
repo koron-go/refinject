@@ -37,11 +37,11 @@ type QuxService struct {
 }
 
 func TestInjectSimple(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&FooService{})
+	reg := &Registry{}
+	reg.Register(&FooService{})
 
 	bar := &BarService{}
-	err := c.Inject(bar)
+	err := reg.Inject(bar)
 	if err != nil {
 		t.Fatalf("inject failed: %s", err)
 	}
@@ -55,11 +55,11 @@ func TestInjectSimple(t *testing.T) {
 }
 
 func TestMaterializeSimple(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&FooService{})
+	reg := &Registry{}
+	reg.Register(&FooService{})
 
 	var iv Fooer
-	v, err := c.Materialize(&iv)
+	v, err := reg.Materialize(&iv)
 	if err != nil {
 		t.Fatalf("materialize failed: %s", err)
 	}
@@ -77,12 +77,12 @@ func TestMaterializeSimple(t *testing.T) {
 }
 
 func TestInjectHierarchy(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&FooService{})
-	c.Register(&BarService{})
+	reg := &Registry{}
+	reg.Register(&FooService{})
+	reg.Register(&BarService{})
 
 	baz := &BazService{}
-	err := c.Inject(baz)
+	err := reg.Inject(baz)
 	if err != nil {
 		t.Fatalf("inject failed: %s", err)
 	}
@@ -97,12 +97,12 @@ func TestInjectHierarchy(t *testing.T) {
 }
 
 func TestInjectCached(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&FooService{})
-	c.Register(&BarService{})
+	reg := &Registry{}
+	reg.Register(&FooService{})
+	reg.Register(&BarService{})
 
 	qux := &QuxService{}
-	err := c.Inject(qux)
+	err := reg.Inject(qux)
 	if err != nil {
 		t.Fatalf("inject failed: %s", err)
 	}
@@ -145,12 +145,12 @@ type QuuxService2 struct {
 func (*QuuxService2) Quux2() {}
 
 func TestMaterializeRecursive(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&QuuxService1{})
-	c.Register(&QuuxService2{})
+	reg := &Registry{}
+	reg.Register(&QuuxService1{})
+	reg.Register(&QuuxService2{})
 
 	var iv Quuxer1
-	_, err := c.Materialize(&iv)
+	_, err := reg.Materialize(&iv)
 	if err != nil {
 		t.Fatalf("materialize failed: %s", err)
 	}
@@ -177,12 +177,12 @@ type CorgeService struct {
 }
 
 func TestInjectEmbedded(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&CorgeService{})
-	c.Register(&FooService{})
+	reg := &Registry{}
+	reg.Register(&CorgeService{})
+	reg.Register(&FooService{})
 
 	baz := &BazService{}
-	err := c.Inject(baz)
+	err := reg.Inject(baz)
 	if err != nil {
 		t.Fatalf("inject failed: %s", err)
 	}
@@ -196,12 +196,12 @@ func TestInjectEmbedded(t *testing.T) {
 }
 
 func TestMaterializeEmbedded(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&CorgeService{})
-	c.Register(&FooService{})
+	reg := &Registry{}
+	reg.Register(&CorgeService{})
+	reg.Register(&FooService{})
 
 	var iv Barer
-	v, err := c.Materialize(&iv)
+	v, err := reg.Materialize(&iv)
 	if err != nil {
 		t.Fatalf("materialize failed: %s", err)
 	}
@@ -214,12 +214,12 @@ func TestMaterializeEmbedded(t *testing.T) {
 }
 
 func TestFoundMultipleObjects(t *testing.T) {
-	c := &Catalog{}
-	c.Register(&BarService{})
-	c.Register(&CorgeService{})
+	reg := &Registry{}
+	reg.Register(&BarService{})
+	reg.Register(&CorgeService{})
 
 	var iv Barer
-	v, err := c.Materialize(&iv)
+	v, err := reg.Materialize(&iv)
 	if err == nil {
 		t.Fatalf("materialize should be failed, by multiple found: %+v", v)
 	}
